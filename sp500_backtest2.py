@@ -10,23 +10,45 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Set up the Streamlit interface
-st.title("S&P 500 Backtest & Monte Carlo Simulation")
-st.write("This app simulates the backtest performance and Monte Carlo projections for a given initial investment amount and term in years against the S&P 500 using historical data.")
+st.title("Stock Index Backtest & Monte Carlo Simulation")
+st.write("This app simulates the backtest performance and Monte Carlo projections for a given initial investment amount and term in years using historical data.")
 
-# Input from the user
-initial_amount = st.number_input("Enter Initial Investment Amount ($):", min_value=100.0, value=1000.0)
-years = st.number_input("Enter Term (Years):", min_value=1, max_value=100, value=10)
+# Move user input components to the sidebar
+st.sidebar.header("User Input")
 
-# Fetch S&P 500 data
+# Dropdown menu for index selection
+index_choice = st.sidebar.selectbox(
+    "Select Index:", 
+    options=["S&P 500", "FTSE 100", "Nikkei", "Stoxx", "BSE", "Shanghai Composite Index"]
+)
+
+# Input from the user for initial amount and term
+initial_amount = st.sidebar.number_input("Enter Initial Investment Amount (£):", min_value=100.0, value=1000.0)
+years = st.sidebar.number_input("Enter Term (Years):", min_value=1, max_value=100, value=10)
+
+# Fetch historical data based on the selected index
 @st.cache_data
-def fetch_sp500_data():
-    sp500 = yf.Ticker("^GSPC")
-    data = sp500.history(period="max")
+def fetch_data(ticker):
+    index = yf.Ticker(ticker)
+    data = index.history(period="max")
     data = data[['Close']]
     data.reset_index(inplace=True)
     return data
 
-data = fetch_sp500_data()
+# Determine ticker symbol based on user selection
+index_ticker_map = {
+    "S&P 500": "^GSPC",
+    "FTSE 100": "^FTSE",
+    "Nikkei": "^N225",
+    "Stoxx": "^STOXX50E",
+    "BSE": "^BSESN",
+    "Shanghai Composite Index": "000001.SS"
+}
+
+ticker_symbol = index_ticker_map[index_choice]
+
+# Fetch data for the selected index
+data = fetch_data(ticker_symbol)
 
 # Calculate the backtest performance
 def calculate_backtest(data, initial_amount, years):
@@ -67,7 +89,10 @@ def monte_carlo_simulation(data, initial_amount, years, num_simulations=100):
     for _ in range(num_simulations):
         simulated_prices = [initial_amount]
         for _ in range(days):
-            simulated_prices.append(simulated_prices[-1] * (1 + np.random.choice(daily_returns)))
+            next_price = simulated_prices[-1] * (1 + np.random.choice(daily_returns))
+            # Replace any negative value with zero
+            next_price = max(next_price, 1.)
+            simulated_prices.append(next_price)
         simulations.append(simulated_prices)
 
     # Convert to DataFrame for analysis
@@ -79,6 +104,9 @@ def monte_carlo_simulation(data, initial_amount, years, num_simulations=100):
     upper_bound = median_simulation + 1.5 * std_dev
     lower_bound = median_simulation - 1.5 * std_dev
 
+    # Ensure lower bound does not go below zero
+    lower_bound = lower_bound.clip(lower=0)
+
     # Extract yearly values for the table
     yearly_indices = [(i + 1) * 252 for i in range(years)]
     yearly_median = median_simulation.iloc[yearly_indices].values
@@ -88,47 +116,51 @@ def monte_carlo_simulation(data, initial_amount, years, num_simulations=100):
     return median_simulation, upper_bound, lower_bound, yearly_median, yearly_upper, yearly_lower
 
 # Perform calculation and display results
-if st.button("Run Backtest"):
+if st.sidebar.button("Run Backtest"):
     result = calculate_backtest(data, initial_amount, years)
     
     if result:
         cumulative_return, final_amount, term_data = result
-        st.write(f"**Initial Amount:** ${initial_amount:,.2f}")
+        st.write(f"**Initial Amount:** £{initial_amount:,.2f}")
         st.write(f"**Term:** {years} years")
         st.write(f"**Cumulative Return:** {cumulative_return * 100:.2f}%")
-        st.write(f"**Final Amount:** ${final_amount:,.2f}")
+        st.write(f"**Final Amount:** £{final_amount:,.2f}")
 
-        # Plot the performance
+        # Plot the performance on the main page
         fig, ax = plt.subplots()
         ax.plot(term_data['Year'], term_data['Close'], marker='o', linestyle='-')
-        ax.set_title(f"S&P 500 Performance Over the Last {years} Years")
+        ax.set_title(f"{index_choice} Performance Over the Last {years} Years")
         ax.set_xlabel("Year")
-        ax.set_ylabel("S&P 500 Index Level")
+        ax.set_ylabel(f"{index_choice} Index Level")
         st.pyplot(fig)
 
 # Monte Carlo Simulation Section
-if st.button("Run Monte Carlo Simulation"):
+if st.sidebar.button("Run Monte Carlo Simulation"):
     median_sim, upper_bound, lower_bound, yearly_median, yearly_upper, yearly_lower = monte_carlo_simulation(data, initial_amount, years)
 
-    # Plot the simulation results
+    # Plot the simulation results on the main page
     fig, ax = plt.subplots()
     ax.plot(median_sim, label='Median Simulation', color='blue')
     ax.fill_between(range(len(median_sim)), lower_bound, upper_bound, color='lightgray', alpha=0.5, label='±1.5 Std Dev')
-    ax.set_title(f"Monte Carlo Simulation - {years} Years")
+    ax.set_title(f"Monte Carlo Simulation - {years} Years ({index_choice})")
     ax.set_xlabel("Days")
-    ax.set_ylabel("Portfolio Value ($)")
+    ax.set_ylabel("Portfolio Value (£)")
     ax.legend()
     st.pyplot(fig)
 
-    # Create a DataFrame for the yearly results
+    # Create a DataFrame for the yearly results and format it to 2 decimal places
     year_labels = [f"Year {i+1}" for i in range(years)]
     result_df = pd.DataFrame({
         "Year": year_labels,
-        "Median ($)": yearly_median,
-        "Median + 1.5 Std Dev ($)": yearly_upper,
-        "Median - 1.5 Std Dev ($)": yearly_lower
+        "Median (£)": yearly_median,
+        "Median + 1.5 Std Dev (£)": yearly_upper,
+        "Median - 1.5 Std Dev (£)": yearly_lower
     })
 
-    # Display the results in a table
+    result_df["Median (£)"] = result_df["Median (£)"].map('{:,.2f}'.format)
+    result_df["Median + 1.5 Std Dev (£)"] = result_df["Median + 1.5 Std Dev (£)"].map('{:,.2f}'.format)
+    result_df["Median - 1.5 Std Dev (£)"] = result_df["Median - 1.5 Std Dev (£)"].map('{:,.2f}'.format)
+
+    # Display the results in a table on the main page
     st.write("### Yearly Projected Portfolio Value")
     st.table(result_df)
