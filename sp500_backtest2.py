@@ -321,10 +321,10 @@ if st.button("Run Backtest"):
     
     if result:
         cumulative_return, final_amount, term_data = result
-        st.write(f"**Initial Amount:** £{initial_amount:,.2f}")
+        st.write(f"**Initial Amount:** {initial_amount:,.2f}")
         st.write(f"**Term:** {years} years")
         st.write(f"**Cumulative Return:** {cumulative_return * 100:.2f}%")
-        st.write(f"**Final Amount:** £{final_amount:,.2f}")
+        st.write(f"**Final Amount:** {final_amount:,.2f}")
 
         # Plot the performance on the main page
         fig, ax = plt.subplots()
