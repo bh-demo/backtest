@@ -57,9 +57,15 @@ index_ticker_map = {
     "S&P 500": "^GSPC",
     "FTSE 100": "^FTSE",
     "Nikkei": "^N225",
-    "Stoxx": "^STOXX50E",
+    "Euro 100": "^N100",
     "BSE": "^BSESN",
-    "Shanghai Composite Index": "000001.SS"
+    "Shanghai Composite Index": "000001.SS",
+    "Nasdaq":"^IXIC",
+    "Australia":"^AXJO",
+    "Indonesia":"^JKSE",
+    "Hong Kong":"^HSI",
+    "Korea":"^KS11",
+    "Brazil":"^BVSP"
 }
 
 ticker_symbol = index_ticker_map[index_choice]
