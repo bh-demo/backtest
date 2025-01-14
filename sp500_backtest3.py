@@ -121,11 +121,11 @@ def main():
                 result_df = proc_vals2(tickers)
                 st.dataframe(result_df.style.format(
                     {
-                        "Equity/Share (Price Adjusted)": "{:.2f}",
-                        "Debt/Equity": "{:.2f}",
+                        "Eqty/Shr/price": "{:.2f}",
+                        "Dbt/Eqty": "{:.2f}",
                         "P/E": "{:.1f}",
-                        "Yield (%)": "{:.1f}",
-                        "Target/Price": "{:.2f}",
+                        "Yld (%)": "{:.1f}",
+                        "Tgt/Price": "{:.2f}",
                     }
                 ), use_container_width=True)
             except Exception as e:
