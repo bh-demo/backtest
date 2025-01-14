@@ -8,8 +8,25 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import base64 # for image display.
+
+def add_logo():
+    # Display clickable logo at the top of the app
+    st.markdown(
+        """
+        <div style="text-align: center;">
+            <a href="https://www.bghtech.co.uk/" target="_blank">
+                <img src="data:image/png;base64,{}" width="150">
+            </a>
+        </div>
+        """.format(
+        base64.b64encode(open("Bghtech_logo.PNG", "rb").read()).decode()
+    ),
+        unsafe_allow_html=True
+    )
 
 # Set up the Streamlit interface
+add_logo()
 st.title("Stock Index Backtest & Monte Carlo Simulation")
 st.write("This app simulates the backtest performance and Monte Carlo projections for a given initial investment amount and term in years using historical data.")
 
@@ -23,7 +40,7 @@ index_choice = st.selectbox(
 )
 
 # Input from the user for initial amount and term
-initial_amount = st.number_input("Enter Initial Investment Amount (£):", min_value=100.0, value=1000.0)
+initial_amount = st.number_input("Enter Initial Investment Amount (Â£):", min_value=100.0, value=1000.0)
 years = st.number_input("Enter Term (Years):", min_value=1, max_value=100, value=10)
 
 # Fetch historical data based on the selected index
@@ -109,7 +126,7 @@ def original_monte_carlo_simulation(data, initial_amount, years, num_simulations
     median_simulation = simulation_df.median(axis=1)
     std_dev = simulation_df.std(axis=1)
     
-    # Calculate ±1.5 standard deviation
+    # Calculate Â±1.5 standard deviation
     upper_bound = median_simulation + 1.5 * std_dev
     lower_bound = median_simulation - 1.5 * std_dev
 
@@ -159,7 +176,7 @@ def markov_chain_monte_carlo(data, initial_amount, years, num_simulations=100):
     median_simulation = simulation_df.median(axis=1)
     std_dev = simulation_df.std(axis=1)
     
-    # Calculate ±1.5 standard deviation
+    # Calculate Â±1.5 standard deviation
     upper_bound = median_simulation + 1.5 * std_dev
     lower_bound = median_simulation - 1.5 * std_dev
 
@@ -214,7 +231,7 @@ def improved_markov_chain_monte_carlo(data, initial_amount, years, num_simulatio
     median_simulation = simulation_df.median(axis=1)
     std_dev = simulation_df.std(axis=1)
     
-    # Calculate ±1.5 standard deviation
+    # Calculate Â±1.5 standard deviation
     upper_bound = median_simulation + 1.5 * std_dev
     lower_bound = median_simulation - 1.5 * std_dev
 
@@ -268,7 +285,7 @@ def gbm_monte_carlo_simulation(data, initial_amount, years, num_simulations=100,
     median_simulation = simulation_df.median(axis=1)
     std_dev = simulation_df.std(axis=1)
     
-    # Calculate ±1.5 standard deviation
+    # Calculate Â±1.5 standard deviation
     upper_bound = median_simulation + 1.5 * std_dev
     lower_bound = median_simulation - 1.5 * std_dev
 
@@ -296,10 +313,10 @@ if st.button("Run Backtest"):
     
     if result:
         cumulative_return, final_amount, term_data = result
-        st.write(f"**Initial Amount:** £{initial_amount:,.2f}")
+        st.write(f"**Initial Amount:** Â£{initial_amount:,.2f}")
         st.write(f"**Term:** {years} years")
         st.write(f"**Cumulative Return:** {cumulative_return * 100:.2f}%")
-        st.write(f"**Final Amount:** £{final_amount:,.2f}")
+        st.write(f"**Final Amount:** Â£{final_amount:,.2f}")
 
         # Plot the performance on the main page
         fig, ax = plt.subplots()
@@ -323,7 +340,7 @@ if st.button("Run Monte Carlo Simulation"):
     # Plot the simulation results on the main page
     fig, ax = plt.subplots()
     ax.plot(median_sim, label='Median Simulation', color='blue')
-    ax.fill_between(range(len(median_sim)), lower_bound, upper_bound, color='lightgray', alpha=0.5, label='±1.5 Std Dev')
+    ax.fill_between(range(len(median_sim)), lower_bound, upper_bound, color='lightgray', alpha=0.5, label='Â±1.5 Std Dev')
     ax.set_title(f"Monte Carlo Simulation - {years} Years ({index_choice})")
     ax.set_xlabel("Days")
     ax.set_ylabel("Portfolio Value ($)")
