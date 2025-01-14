@@ -100,7 +100,7 @@ def add_logo():
             </a>
         </div>
         """.format(
-        base64.b64encode(open("Streamlit_app/static/Bghtech_logo.png", "rb").read()).decode()
+        base64.b64encode(open("/backtest/Bghtech_logo.png", "rb").read()).decode()
     ),
         unsafe_allow_html=True
     )
