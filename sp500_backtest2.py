@@ -36,7 +36,7 @@ st.header("User Input")
 # Dropdown menu for index selection
 index_choice = st.selectbox(
     "Select Index:", 
-    options=["S&P 500", "FTSE 100", "Nikkei", "Stoxx", "BSE", "Shanghai Composite Index"]
+    options=["S&P 500", "FTSE 100", "Nikkei", "Euro 100", "India", "China","Nasdaq","Australia","Indonesia","Hong Kong","Korea","Brazil", "Argentina", "Turkey" ]
 )
 
 # Input from the user for initial amount and term
@@ -58,14 +58,16 @@ index_ticker_map = {
     "FTSE 100": "^FTSE",
     "Nikkei": "^N225",
     "Euro 100": "^N100",
-    "BSE": "^BSESN",
-    "Shanghai Composite Index": "000001.SS",
+    "India": "^BSESN",
+    "China": "000001.SS",
     "Nasdaq":"^IXIC",
     "Australia":"^AXJO",
     "Indonesia":"^JKSE",
     "Hong Kong":"^HSI",
     "Korea":"^KS11",
-    "Brazil":"^BVSP"
+    "Brazil":"^BVSP",
+    "Argentina":"^MERV",
+    "Turkey": "XU100.IS"
 }
 
 ticker_symbol = index_ticker_map[index_choice]
