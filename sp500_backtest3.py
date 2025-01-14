@@ -3,7 +3,9 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 import numpy as np
+import base64 # for image display.
 
+# Actual code
 def proc_vals2(tickers):
     tickers = tickers.split()
     data = []  # Store processed data for DataFrame
@@ -88,8 +90,24 @@ def proc_vals2(tickers):
     df = pd.DataFrame(data).replace({None: np.nan})
     return df
 
+def add_logo():
+    # Display clickable logo at the top of the app
+    st.markdown(
+        """
+        <div style="text-align: center;">
+            <a href="https://www.bghtech.co.uk/" target="_blank">
+                <img src="data:image/png;base64,{}" width="150">
+            </a>
+        </div>
+        """.format(
+        base64.b64encode(open("Bghtech_logo.png", "rb").read()).decode()
+    ),
+        unsafe_allow_html=True
+    )
+    
 # Streamlit app
 def main():
+    add_logo()
     st.title("Stocks - Fundamentals Analysis")
     st.write("Enter space-separated Yahoo stock symbols to analyze.")
 
