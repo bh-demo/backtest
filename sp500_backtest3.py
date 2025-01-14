@@ -78,12 +78,12 @@ def proc_vals2(tickers):
         de = debt / equity if equity else None
 
         data.append({
-            "Symbol": tinfo.get("symbol", "N/A"),
-            "Equity/Share (Price Adjusted)": eqs / cp if eqs and cp else None,
-            "Debt/Equity": de,
+            "Symb": tinfo.get("symbol", "N/A"),
+            "Eqty/Shr/price": eqs / cp if eqs and cp else None,
+            "Dbt/Eqty": de,
             "P/E": pe if pe != -1 else None,
-            "Yield (%)": yld,
-            "Target/Price": tgt,
+            "Yld (%)": yld,
+            "Tgt/Price": tgt,
         })
 
     # Replace None with NaN for compatibility with formatting
