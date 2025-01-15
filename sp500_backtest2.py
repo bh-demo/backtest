@@ -8,6 +8,8 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from datetime import datetime as dt
+from datetime import timedelta
 import base64 # for image display.
 
 def add_logo():
@@ -26,7 +28,9 @@ def add_logo():
     )
 
 # Set up the Streamlit interface
-add_logo()
+#add_logo()
+
+# Set up the Streamlit interface
 st.title("Stock Index Backtest & Monte Carlo Simulation")
 st.write("This app simulates the backtest performance and Monte Carlo projections for a given initial investment amount and term in years using historical data.")
 
@@ -36,11 +40,11 @@ st.header("User Input")
 # Dropdown menu for index selection
 index_choice = st.selectbox(
     "Select Index:", 
-    options=["S&P 500", "FTSE 100", "Nikkei", "Euro 100", "India", "China","Nasdaq","Australia","Indonesia","Hong Kong","Korea","Brazil", "Argentina", "Turkey" ]
+    options=["S&P 500", "FTSE 100", "Nikkei", "Euro 100", "India", "China","Nasdaq","Australia","Indonesia","Hong Kong","Korea","Brazil", "Argentina" ]
 )
 
 # Input from the user for initial amount and term
-initial_amount = st.number_input("Enter Initial Investment Amount (local currency):", min_value=100.0, value=1000.0)
+initial_amount = st.number_input("Enter Initial Investment Amount (£):", min_value=100.0, value=1000.0)
 years = st.number_input("Enter Term (Years):", min_value=1, max_value=100, value=10)
 
 # Fetch historical data based on the selected index
@@ -66,40 +70,87 @@ index_ticker_map = {
     "Hong Kong":"^HSI",
     "Korea":"^KS11",
     "Brazil":"^BVSP",
-    "Argentina":"^MERV",
-    "Turkey": "XU100.IS"
+    "Argentina":"^MERV"
 }
 
+# Determine fx ticker symbol based on user selection
+fx_ticker_map = {
+    "S&P 500": 'GBPUSD=X',
+    "FTSE 100": None,
+    "Nikkei": 'GBPJPY=X',
+    "Euro 100": 'GBPEUR=X',
+    "India": 'GBPINR=X',
+    "China": 'GBPCNY=X',
+    "Nasdaq":'GBPUSD=X',
+    "Australia":'GBPINR=X',
+    "Indonesia":'GBPIDR=X',
+    "Hong Kong":'GBPHKD=X',
+    "Korea":'GBPKRW=X',
+    "Brazil":'GBPBRL=X',
+    "Argentina":'GBPARS=X'
+}
 ticker_symbol = index_ticker_map[index_choice]
+fx_symbol = fx_ticker_map[index_choice]
 
 # Fetch data for the selected index
 data = fetch_data(ticker_symbol)
+if fx_symbol is not None:
+    fx = fetch_data(fx_symbol)
+
 
 # Calculate the backtest performance
 def calculate_backtest(data, initial_amount, years):
     if years * 252 > len(data):
-        st.warning("Insufficient data for the specified term. Reduce the term in years.")
+        print("Insufficient data for the specified term. Reduce the term in years.")
         return None
+    # go back x years
+    then = dt.now() - timedelta(days=years*365)
+    then = pd.to_datetime(then)
+    data['Date'] =data['Date'].dt.tz_convert(None)
+    data2 = data[(data['Date']>then)]
+    data2.set_index(['Date'],inplace=True)
 
-    # Calculate yearly performance
-    data['Year'] = data['Date'].dt.year
-    yearly_data = data.groupby('Year').last().reset_index()
-
-    # Calculate performance for the last 'years' term
-    term_start_year = yearly_data['Year'].max() - years
-    term_data = yearly_data[yearly_data['Year'] > term_start_year]
-
-    if len(term_data) < years:
-        st.warning("Insufficient data for the specified term. Reduce the term in years.")
-        return None
-
+    df4 = data2.interpolate().dropna()
+    df5 = (df4.iloc[:]['Close']/df4.iloc[0]['Close'])*initial_amount
+    
     # Calculate cumulative returns
-    start_price = term_data.iloc[0]['Close']
-    end_price = term_data.iloc[-1]['Close']
+    start_price = df5.iloc[0]
+    end_price = df5.iloc[-1]
     cumulative_return = (end_price / start_price) - 1
     final_amount = initial_amount * (1 + cumulative_return)
 
-    return cumulative_return, final_amount, term_data
+    return cumulative_return, final_amount, df5
+
+# Returns normalised in GBP
+# Calculate the backtest performance
+def calc_normed_backtest(data, fx, initial_amount, years):
+    if years * 252 > len(data):
+        print("Insufficient data for the specified term. Reduce the term in years.")
+        return None
+    # go back x years
+    then = dt.now() - timedelta(days=years*365)
+    then = pd.to_datetime(then)
+    data['Date'] =data['Date'].dt.tz_convert(None)
+    fx['Date'] =fx['Date'].dt.tz_convert(None)
+    data2 = data[(data['Date']>then)]
+    fx2 = fx[(fx['Date']>then)]
+    data2.set_index(['Date'],inplace=True)
+    fx2.set_index(['Date'],inplace=True)
+
+    df3 = pd.concat([data2,fx2],axis=1).interpolate().dropna().iloc[1::2, :]
+    df3.columns.values[0] = "idx"
+    df3.columns.values[1] = "fx"
+    df4 = df3['idx']/df3['fx']
+    df5 = (df4/df4.iloc[0])*initial_amount
+    df6 = df5.rolling(10).median()
+    
+    # Calculate cumulative returns
+    start_price = df5.iloc[0]
+    end_price = df5.iloc[-1]
+    cumulative_return = (end_price / start_price) - 1
+    final_amount = initial_amount * (1 + cumulative_return)
+
+    return cumulative_return, final_amount, df6
 
 # Monte Carlo Simulation Function
 # Original Monte Carlo Simulation Function
@@ -134,7 +185,7 @@ def original_monte_carlo_simulation(data, initial_amount, years, num_simulations
     median_simulation = simulation_df.median(axis=1)
     std_dev = simulation_df.std(axis=1)
     
-    # Calculate Â±1.5 standard deviation
+    # Calculate ±1.5 standard deviation
     upper_bound = median_simulation + 1.5 * std_dev
     lower_bound = median_simulation - 1.5 * std_dev
 
@@ -149,110 +200,6 @@ def original_monte_carlo_simulation(data, initial_amount, years, num_simulations
 
     return median_simulation, upper_bound, lower_bound, yearly_median, yearly_upper, yearly_lower
 
-#Markov chain with random walk or Metropolis hastings
-def markov_chain_monte_carlo(data, initial_amount, years, num_simulations=100):
-    # Calculate daily returns
-    data['Daily Return'] = data['Close'].pct_change()
-    daily_returns = data['Daily Return'].dropna()
-
-    # Mean and standard deviation of daily returns to simulate realistic movement
-    mu = daily_returns.mean()
-    sigma = daily_returns.std()
-
-    # Run MCMC simulations
-    simulations = []
-    days = years * 252  # Approximate trading days in the term
-
-    for _ in range(num_simulations):
-        simulated_prices = [initial_amount]
-        current_return = mu
-
-        for _ in range(days):
-            # Simulate a new return based on the current return with a small random change
-            change = np.random.normal(loc=0, scale=sigma)
-            current_return += change
-            # Apply the Markov process: the next price depends on the current price
-            next_price = simulated_prices[-1] * (1 + current_return)
-            # Replace any negative value with zero
-            next_price = max(next_price, 1)
-            simulated_prices.append(next_price)
-
-        simulations.append(simulated_prices)
-
-    # Convert to DataFrame for analysis
-    simulation_df = pd.DataFrame(simulations).T
-    median_simulation = simulation_df.median(axis=1)
-    std_dev = simulation_df.std(axis=1)
-    
-    # Calculate Â±1.5 standard deviation
-    upper_bound = median_simulation + 1.5 * std_dev
-    lower_bound = median_simulation - 1.5 * std_dev
-
-    # Ensure lower bound does not go below zero
-    lower_bound = lower_bound.clip(lower=0)
-
-    # Extract yearly values for the table
-    yearly_indices = [(i + 1) * 252 for i in range(years)]
-    yearly_median = median_simulation.iloc[yearly_indices].values
-    yearly_upper = upper_bound.iloc[yearly_indices].values
-    yearly_lower = lower_bound.iloc[yearly_indices].values
-
-    return median_simulation, upper_bound, lower_bound, yearly_median, yearly_upper, yearly_lower
-
-# Improved Markov chain
-def improved_markov_chain_monte_carlo(data, initial_amount, years, num_simulations=100, mean_reversion_strength=0.03, volatility_cap=0.02):
-    # Calculate daily returns
-    data['Daily Return'] = data['Close'].pct_change()
-    daily_returns = data['Daily Return'].dropna()
-
-    # Mean and standard deviation of daily returns to simulate realistic movement
-    mu = daily_returns.mean()
-    sigma = daily_returns.std()
-
-    # Run MCMC simulations
-    simulations = []
-    days = years * 252  # Approximate trading days in the term
-
-    for _ in range(num_simulations):
-        simulated_prices = [initial_amount]
-        current_return = mu
-
-        for _ in range(days):
-            # Simulate a new return based on the current return with a small random change
-            change = np.random.normal(loc=0, scale=min(sigma * 0.5, volatility_cap))  # Cap the change to prevent extremes
-            # Introduce mean reversion effect
-            reversion = mean_reversion_strength * (mu - current_return)
-            
-            # Limit the effect of change and reversion
-            current_return += max(min(change + reversion, volatility_cap), -volatility_cap)
-
-            # Apply the Markov process: the next price depends on the current price
-            next_price = simulated_prices[-1] * (1 + current_return)
-            # Replace any negative value with zero
-            next_price = max(next_price, 0)
-            simulated_prices.append(next_price)
-
-        simulations.append(simulated_prices)
-
-    # Convert to DataFrame for analysis
-    simulation_df = pd.DataFrame(simulations).T
-    median_simulation = simulation_df.median(axis=1)
-    std_dev = simulation_df.std(axis=1)
-    
-    # Calculate Â±1.5 standard deviation
-    upper_bound = median_simulation + 1.5 * std_dev
-    lower_bound = median_simulation - 1.5 * std_dev
-
-    # Ensure lower bound does not go below zero
-    lower_bound = lower_bound.clip(lower=0)
-
-    # Extract yearly values for the table
-    yearly_indices = [(i + 1) * 252 for i in range(years)]
-    yearly_median = median_simulation.iloc[yearly_indices].values
-    yearly_upper = upper_bound.iloc[yearly_indices].values
-    yearly_lower = lower_bound.iloc[yearly_indices].values
-
-    return median_simulation, upper_bound, lower_bound, yearly_median, yearly_upper, yearly_lower
 
 
 # Markov Geometric Brownian motion
@@ -293,7 +240,7 @@ def gbm_monte_carlo_simulation(data, initial_amount, years, num_simulations=100,
     median_simulation = simulation_df.median(axis=1)
     std_dev = simulation_df.std(axis=1)
     
-    # Calculate Â±1.5 standard deviation
+    # Calculate ±1.5 standard deviation
     upper_bound = median_simulation + 1.5 * std_dev
     lower_bound = median_simulation - 1.5 * std_dev
 
@@ -312,7 +259,7 @@ def gbm_monte_carlo_simulation(data, initial_amount, years, num_simulations=100,
 # Dropdown menu for simulation selection
 simulation_type = st.selectbox(
     "Select Monte Carlo Simulation Type:",
-    options=["Original Monte Carlo", "Random Walk MCMC", "Geometric Brownian Motion MCMC"]
+    options=["Monte Carlo", "Geometric Brownian Motion MCMC"]
 )
 
 # Perform calculation and display results
@@ -321,26 +268,46 @@ if st.button("Run Backtest"):
     
     if result:
         cumulative_return, final_amount, term_data = result
-        st.write(f"**Initial Amount:** {initial_amount:,.2f}")
+        st.write(f"**Initial Amount:** £{initial_amount:,.2f}")
         st.write(f"**Term:** {years} years")
         st.write(f"**Cumulative Return:** {cumulative_return * 100:.2f}%")
         st.write(f"**Final Amount:** {final_amount:,.2f}")
 
         # Plot the performance on the main page
         fig, ax = plt.subplots()
-        ax.plot(term_data['Year'], term_data['Close'], marker='o', linestyle='-')
+        ax.plot(term_data, marker='.', linestyle='-')
         ax.set_title(f"{index_choice} Performance Over the Last {years} Years")
         ax.set_xlabel("Year")
         ax.set_ylabel(f"{index_choice} Index Level")
         st.pyplot(fig)
 
+# Normalised backtest
+if st.button("Normalised GBP Backtest"):
+    if fx_symbol is not None:
+        result = calc_normed_backtest(data, fx, initial_amount, years)
+        if result:
+            cumulative_return, final_amount, term_data = result
+            st.write(f"**Initial Amount:** £{initial_amount:,.2f}")
+            st.write(f"**Term:** {years} years")
+            st.write(f"**Cumulative Return:** {cumulative_return * 100:.2f}%")
+            st.write(f"**Final Amount:** £{final_amount:,.2f}")
+
+            # Plot the performance on the main page
+            fig, ax = plt.subplots()
+            ax.plot(term_data, marker='.', linestyle='-')
+            ax.set_title(f"{index_choice} Performance Over the Last {years} Years")
+            ax.set_xlabel("Year")
+            ax.set_ylabel(f"{index_choice} Index Level")
+            st.pyplot(fig)
+    else:
+        st.write(f"**Run Backtest for FTSE**")
+
+    
 # Run Monte Carlo Simulation based on user choice
 if st.button("Run Monte Carlo Simulation"):
-    if simulation_type == "Original Monte Carlo":
+    if simulation_type == "Monte Carlo":
         median_sim, upper_bound, lower_bound, yearly_median, yearly_upper, yearly_lower = original_monte_carlo_simulation(
             data, initial_amount, years)
-    elif simulation_type == "Random Walk MCMC":
-        median_sim, upper_bound, lower_bound, yearly_median, yearly_upper, yearly_lower = improved_markov_chain_monte_carlo(data, initial_amount, years)
     elif simulation_type == "Geometric Brownian Motion MCMC":
         median_sim, upper_bound, lower_bound, yearly_median, yearly_upper, yearly_lower = gbm_monte_carlo_simulation(
             data, initial_amount, years)
@@ -348,7 +315,7 @@ if st.button("Run Monte Carlo Simulation"):
     # Plot the simulation results on the main page
     fig, ax = plt.subplots()
     ax.plot(median_sim, label='Median Simulation', color='blue')
-    ax.fill_between(range(len(median_sim)), lower_bound, upper_bound, color='lightgray', alpha=0.5, label='Â±1.5 Std Dev')
+    ax.fill_between(range(len(median_sim)), lower_bound, upper_bound, color='lightgray', alpha=0.5, label='±1.5 Std Dev')
     ax.set_title(f"Monte Carlo Simulation - {years} Years ({index_choice})")
     ax.set_xlabel("Days")
     ax.set_ylabel("Portfolio Value ($)")
