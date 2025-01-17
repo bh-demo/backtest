@@ -279,6 +279,7 @@ if st.button("Run Backtest"):
         ax.set_title(f"{index_choice} Performance Over the Last {years} Years")
         ax.set_xlabel("Year")
         ax.set_ylabel(f"{index_choice} Index Level")
+        plt.xticks(rotation=45) ## Rotate the x-axis labels
         st.pyplot(fig)
 
 # Normalised backtest
@@ -298,6 +299,7 @@ if st.button("Normalised GBP Backtest"):
             ax.set_title(f"{index_choice} Performance Over the Last {years} Years")
             ax.set_xlabel("Year")
             ax.set_ylabel(f"{index_choice} Index Level")
+            plt.xticks(rotation=45) ## Rotate the x-axis labels
             st.pyplot(fig)
     else:
         st.write(f"**Run Backtest for FTSE**")
