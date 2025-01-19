@@ -45,7 +45,7 @@ index_choice = st.selectbox(
 
 # Input from the user for initial amount and term
 initial_amount = st.number_input("Enter Initial Investment Amount (£):", min_value=100.0, value=1000.0)
-years = st.number_input("Enter Term (Years):", min_value=1, max_value=100, value=10)
+years = st.number_input("Enter Term (Years):", min_value=1., max_value=100., value=10.,format='%.1f')
 
 # Fetch historical data based on the selected index
 @st.cache_data
