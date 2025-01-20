@@ -123,7 +123,7 @@ choice_dict = {
 
 # Streamlit app
 def main():
-    #add_logo()
+    add_logo()
     st.title("Stocks - Fundamentals Analysis")
     st.write("Enter space-separated Yahoo stock symbols to analyze.")
 
