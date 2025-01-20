@@ -104,17 +104,39 @@ def add_logo():
     ),
         unsafe_allow_html=True
     )
-    
+
+# choice dict
+choice_dict = {
+    "manual symbols": "AAPL MSFT PSN.L ",
+    "ISA": 'BATS.L SHEL.L CNA.L PSN.L TW.L LAND.L GFRD.L MNG.L LGEN.L PHNX.L AV.L VOD.L ',
+    "SIPP": 'BARC.L HSBA.L GFRD.L IAG.L PNN.L RIO.L BT-A.L VOD.L',
+    "airlines": 'IAG.L EZJ.L WIZZ.L AF.PA LHA.DE RYA.IR AAL DAL JBLU',
+    "banks": 'HSBA.L BARC.L LLOY.L NWG.L MTRO.L JPM BAC GS WFC ',
+    "builders":'RMV.L PSN.L VTY.L BKG.L BTRW.L TW.L BWY.L CRST.L TOL PHM DHI LEN',
+    "BH_select": 'VOD.L CURY.L BARC.L LAND.L CRST.L NWG.L BT-A.L HSBA.L BATS.L SQZ.L TW.L S32.L PSN.L SHEL.L MNG.L VTY.L NG.L O PRU.L AV.L TSCO.L SSE.L CNA.L PHNX.L RIO.L PNN.L HST GFRD.L IMB.L LGEN.L IAG.L KGF.L NG.L DOCS.L ',
+    "high div": 'ITH.L HSBA.L MNG.L LGEN.L PHNX.L AV.L BATS.L IMB.L BRBY.L TW.L LAND.L BT-A.L WPP.L SDR.L NWG.L LMP.L ENOG.L',
+    "couriers":'UPS FDX CHRW FWRD DHL.DE IDS.L',
+    "Real Estate ETFs": 'PLD EQIX WELL SPG O DLR PSA VICI EXR',
+    "Reits": 'BLND.L LAND.L UTG.L O ADC SPG NNN FRT KIM WPC',
+    "US_stocks": 'AAPL GOOG META TSLA AMZN MSFT VZ CVX INTC AMD IBM CSCO KO PFE ACN V PYPL GE CRM NVDA  UNH'
+    }
+
 # Streamlit app
 def main():
-    add_logo()
+    #add_logo()
     st.title("Stocks - Fundamentals Analysis")
     st.write("Enter space-separated Yahoo stock symbols to analyze.")
 
-    # Input field for stock symbols
-    tickers = st.text_input("Stock Symbols", "AAPL MSFT TSLA NVDA META AMZN GOOG RMV.L PSN.L CNA.L BATS.L")
+    # Dropdown menu for stock selection
+    stock_choice = st.selectbox(
+        "Select Stocks:", 
+        options=["manual symbols","ISA", "SIPP", "airlines", "banks", "builders","BH_select", "couriers", "high div", "Real Estate ETFs", "Reits","US_stocks"]
+    )
 
-    if st.button("Analyze"):
+    # Input field for stock symbols
+    tickers = st.text_input("Stock Symbols", choice_dict[stock_choice])
+
+    if st.button("Analyse"):
         if tickers:
             try:
                 # Process tickers and display DataFrame
