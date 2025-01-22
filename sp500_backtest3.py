@@ -1,9 +1,11 @@
 # GPT streamlit app based on my code to normalise balance sheet / fundamentals.
+# Growth estimate added
+
 import streamlit as st
 import yfinance as yf
 import pandas as pd
 import numpy as np
-import base64 # for image display.
+import base64  # for image display.
 
 # Actual code
 def proc_vals2(tickers):
@@ -14,7 +16,7 @@ def proc_vals2(tickers):
         tck_obj = yf.Ticker(tck)
         tinfo = tck_obj.info
         d = tck_obj.quarterly_balance_sheet
-
+        e = tck_obj.earnings_estimate
         # Extract equity
         try:
             if "Common Stock Equity" in d.index:
@@ -38,7 +40,7 @@ def proc_vals2(tickers):
         cp = tinfo.get("currentPrice", 0) / 100.0 if tinfo.get("currentPrice") else None
 
         # Price-to-Earnings ratio
-        forward_eps = tinfo.get("forwardEps", None)
+        forward_eps = e['yearAgoEps'].iloc[-1]
         pe = cp / forward_eps if cp and forward_eps else tinfo.get("forwardPE", -1)
 
         # Dividend yield
@@ -54,7 +56,7 @@ def proc_vals2(tickers):
         exchange_info = yf.Ticker(currency_pair).info
         sf = (exchange_info.get("bid", 1) + exchange_info.get("ask", 1)) / 2
 
-        if sf == 1.0:
+        if tinfo.get("currency", "GBP") in ["GBP","EUR", "USD"]:
             pe *= 100
         if tinfo.get("currency", "USD") in ["EUR", "USD"]:
             cp = cp * 100 if cp else None
@@ -77,6 +79,14 @@ def proc_vals2(tickers):
         debt = (long_term_debt or 0) + (current_debt or 0)
         de = debt / equity if equity else None
 
+        # Growth Estimate (Annualized Earnings Growth)
+        growth_est0 = e['growth'].iloc[-2]  # growth curr year
+        growth_est1 = e['growth'].iloc[-1]  # growth next year
+        if growth_est0 is not None:
+            growth_est0 *= 100  # Convert to percentage
+        if growth_est1 is not None:
+            growth_est1 *= 100  # Convert to percentage
+
         data.append({
             "Symb": tinfo.get("symbol", "N/A"),
             "Eqty/Shr/price": eqs / cp if eqs and cp else None,
@@ -84,6 +94,8 @@ def proc_vals2(tickers):
             "P/E": pe if pe != -1 else None,
             "Yld (%)": yld,
             "Tgt/Price": tgt,
+            "G_0y(%)": growth_est0, # Format name must be same as in df
+            "G_1y(%)": growth_est1,
         })
 
     # Replace None with NaN for compatibility with formatting
@@ -113,17 +125,18 @@ choice_dict = {
     "airlines": 'IAG.L EZJ.L WIZZ.L AF.PA LHA.DE RYA.IR AAL DAL JBLU',
     "banks": 'HSBA.L BARC.L LLOY.L NWG.L MTRO.L JPM BAC GS WFC ',
     "builders":'RMV.L PSN.L VTY.L BKG.L BTRW.L TW.L BWY.L CRST.L TOL PHM DHI LEN',
-    "BH_select": 'VOD.L CURY.L BARC.L LAND.L CRST.L NWG.L BT-A.L HSBA.L BATS.L SQZ.L TW.L S32.L PSN.L SHEL.L MNG.L VTY.L NG.L O PRU.L AV.L TSCO.L SSE.L CNA.L PHNX.L RIO.L PNN.L HST GFRD.L IMB.L LGEN.L IAG.L KGF.L DOCS.L ',
+    "BH_select": 'VOD.L CURY.L BARC.L LAND.L CRST.L NWG.L BT-A.L HSBA.L BATS.L SQZ.L TW.L S32.L PSN.L SHEL.L MNG.L VTY.L NG.L O PRU.L AV.L TSCO.L SSE.L CNA.L PHNX.L RIO.L PNN.L HST GFRD.L IMB.L LGEN.L IAG.L KGF.L DOCS.L EZJ.L',
     "high div": 'ITH.L HSBA.L MNG.L LGEN.L PHNX.L AV.L BATS.L IMB.L BRBY.L TW.L LAND.L BT-A.L WPP.L SDR.L NWG.L LMP.L ENOG.L',
     "couriers":'UPS FDX CHRW FWRD DHL.DE IDS.L',
-    "Real Estate ETFs": 'PLD EQIX WELL SPG O DLR PSA VICI EXR',
+    "Real Estate ETFs": 'PLD EQIX WELL SPG O DLR PSA VICI EXR AVB',
     "Reits": 'BLND.L LAND.L UTG.L O ADC SPG NNN FRT KIM WPC',
+    "Water": 'PNN.L UU.L SVT.L AWK WTRG AWR CWT ARIS SJW',
     "US_stocks": 'AAPL GOOG META TSLA AMZN MSFT VZ CVX INTC AMD IBM CSCO KO PFE ACN V PYPL GE CRM NVDA  UNH'
     }
 
 # Streamlit app
 def main():
-    add_logo()
+    #add_logo()
     st.title("Stocks - Fundamentals Analysis")
     st.write("Enter space-separated Yahoo stock symbols to analyze.")
 
@@ -148,6 +161,8 @@ def main():
                         "P/E": "{:.1f}",
                         "Yld (%)": "{:.1f}",
                         "Tgt/Price": "{:.2f}",
+                        "G_0y(%)": "{:.1f}",  # Format name must be same as in df
+                        "G_1y(%)": "{:.1f}",
                     }
                 ), use_container_width=True)
             except Exception as e:
