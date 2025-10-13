@@ -89,8 +89,9 @@ def proc_vals2(tickers):
 
         data.append({
             "Symb": tinfo.get("symbol", "N/A"),
-            "Eqty/Shr/price": eqs / cp if eqs and cp else None,
+            "Eqty/Shr": eqs / cp if eqs and cp else None,
             "Dbt/Eqty": de,
+            "Net Eqty": eqs/cp - ((eqs/cp)*de) if eqs and cp else None,
             "P/E": pe if pe != -1 else None,
             "Yld (%)": yld,
             "Tgt/Price": tgt,
@@ -172,3 +173,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
