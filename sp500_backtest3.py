@@ -129,7 +129,7 @@ choice_dict = {
     "Real Estate ETFs": 'PLD EQIX WELL SPG O DLR PSA VICI EXR AVB',
     "Reits": 'BLND.L LAND.L UTG.L O ADC SPG NNN FRT KIM WPC',
     "Water": 'PNN.L UU.L SVT.L AWK WTRG AWR CWT ARIS SJW',
-    "Insurers": 'AV.L LGEN.L MNG.L PHNX.L PRU.L'
+    "Insurers": 'AV.L LGEN.L MNG.L PHNX.L PRU.L',
     "US_stocks": 'NVDA MSFT AAPL GOOG META TSLA AMZN VZ CVX INTC AMD IBM CSCO KO PFE ACN V PYPL GE CRM UNH'
     }
 
@@ -171,5 +171,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
