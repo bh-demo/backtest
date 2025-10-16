@@ -27,10 +27,27 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from typing import Optional, Dict
+import base64  # for image display.
+
 
 st.set_page_config(page_title="DCF Fair Price Valuation (Currency-normalized)", layout="wide")
 
 # ------------------------- Helper functions -------------------------
+def add_logo():
+    # Display clickable logo at the top of the app
+    st.markdown(
+        """
+        <div style="text-align: center;">
+            <a href="https://www.bghtech.co.uk/" target="_blank">
+                <img src="data:image/png;base64,{}" width="150">
+            </a>
+        </div>
+        """.format(
+        base64.b64encode(open("Bghtech_logo.PNG", "rb").read()).decode()
+    ),
+        unsafe_allow_html=True
+    )
+
 @st.cache_data(show_spinner=False)
 def fetch_ticker_data(ticker: str) -> Dict:
     """Fetch serializable pieces from yfinance Ticker. Return dicts/dataframes/series only.
@@ -283,6 +300,7 @@ def pv_of_projected_dividends(avg_dividend_per_share: float, growth_rates: list,
 
 
 # ------------------------- Streamlit UI -------------------------
+add_logo()
 st.title("Discounted Cash Flow (DCF) — Fair Price Valuation (Inflation, Dividends & Currency)")
 st.markdown("Enter one or more Yahoo Finance tickers (comma-separated) to compute DCF fair prices. The app will try to normalise currencies (price vs balance sheet) and convert pence→pounds for London tickers when necessary.")
 
