@@ -84,7 +84,7 @@ with st.sidebar:
     st.header("Input Parameters")
     
     # Stock symbols input
-    default_symbols = ['ISF.L', 'SPY', 'GBPUSD=X', 'BATS.L','DHYG.L', 'UESD.L', 'FLOT.L', 'TI5G.L', 'GLTY.L']
+    default_symbols = [ 'VWRP.L' 'PSN.L' 'AV.L' 'PHNX.L' 'LGEN.L' 'CNA.L' 'UTG.L' 'VHYL.L' 'SSE.L' 'CTEC.L' 'TW.L' 'GFRD.L' 'MNG.L' 'LAND.L' 'ISF.L', 'GBPUSD=X', 'BATS.L','DHYG.L', 'UESD.L', 'FLOT.L', 'TI5G.L', 'GLTY.L']
     symbols_input = st.text_area(
         "Enter stock symbols (comma or space separated)", 
         value=", ".join(default_symbols))
